@@ -1,14 +1,65 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
-	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
 	<flow name="contacts-apiFlow" doc:id="f2fd77a1-0325-4f75-b2c7-28d33b6abee3" >
 		<http:listener doc:name="Listener" doc:id="ff452ca4-8fd3-4a8a-b24d-84010faa643c" config-ref="HTTP_Listener_config" path="/api"/>
 		<http:request method="GET" doc:name="JSONPlaceholder_Config" doc:id="ad1171f3-5765-414a-a726-ac093eff059f" config-ref="HTTP_Request_configuration1" path="api"/>
 	</flow>
 	<flow name="contacts-apiFlow1" doc:id="e2e0c4fe-58d7-436a-b8e6-8af5e85035bc" >
-		<http:listener doc:name="Listener" doc:id="8b87d354-502a-40a6-aa0d-c68409843423" config-ref="HTTP_Listener_config"/>
+		<http:listener doc:name="Listener" doc:id="8b87d354-502a-40a6-aa0d-c68409843423" config-ref="HTTP_Listener_config" allowedMethods="GET" path="/contacts/{id}"/>
+		<set-variable value="#[attributes.uriParams.id]" doc:name="Set Variable" doc:id="b09f6f6a-c344-41c5-a156-61f8cf14758b" variableName="contactId"/>
+		<http:request method="GET" doc:name="Request" doc:id="531ad570-4817-4b62-a279-33c21bd48693" config-ref="HTTP_Request_configuration1" path="/users/{userId}" correlationId="#[correlationId]">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	Accept : application/json
+}]]]></http:headers>
+			<http:uri-params ><![CDATA[#[userId = #[vars.contactId]]]]></http:uri-params>
+		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="71ca26e8-7850-4049-b571-48a09a41fb87" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	id: payload.id,
+	name: payload.name,
+	email: lower(payload.email),
+	phone: payload.phone,
+	city: payload.address.city,
+	company: payload.company.name
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="contacts-apiFlow2" doc:id="15d6df24-afc7-4ac2-ad61-b8fbaada54b7" >
+		<http:listener doc:name="Listener" doc:id="0f66a425-61a5-4299-b077-f8b05e79ceef" config-ref="HTTP_Listener_config" path="/contacts/{id}/notes" allowedMethods="GET"/>
+		<set-variable value="" doc:name="Set Variable" doc:id="3bc17a52-cafb-47b1-bdd7-102e8a93f165" variableName="contactId"/>
+		<http:request method="GET" doc:name="Request" doc:id="e1fa86ff-d658-4e28-9872-8e55fefc8502" config-ref="HTTP_Request_configuration1" path="/posts">
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	userId : #[vars.
+}]]]></http:query-params>
+		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="12bb7a0e-530e-4960-affa-f016b1260bd0" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	contactId: vars.contactId,
+	count: sizeOf(payload),
+	notes: payload map ((post) -> {
+		noteId: post.id,
+		title: post.title
+	})
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
 	</flow>
 </mule>
