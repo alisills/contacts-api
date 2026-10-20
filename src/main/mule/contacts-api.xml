@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd"></mule>
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<flow name="contacts-apiFlow" doc:id="f2fd77a1-0325-4f75-b2c7-28d33b6abee3" >
+		<http:listener doc:name="Listener" doc:id="ff452ca4-8fd3-4a8a-b24d-84010faa643c" config-ref="HTTP_Listener_config" path="/api"/>
+		<http:request method="GET" doc:name="JSONPlaceholder_Config" doc:id="ad1171f3-5765-414a-a726-ac093eff059f" config-ref="HTTP_Request_configuration1" path="api"/>
+	</flow>
+	<flow name="contacts-apiFlow1" doc:id="e2e0c4fe-58d7-436a-b8e6-8af5e85035bc" >
+		<http:listener doc:name="Listener" doc:id="8b87d354-502a-40a6-aa0d-c68409843423" config-ref="HTTP_Listener_config"/>
+	</flow>
+</mule>
