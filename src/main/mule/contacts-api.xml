@@ -9,18 +9,22 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 		<http:listener doc:name="Listener" doc:id="ff452ca4-8fd3-4a8a-b24d-84010faa643c" config-ref="HTTP_Listener_config" path="/api"/>
 		<http:request method="GET" doc:name="JSONPlaceholder_Config" doc:id="ad1171f3-5765-414a-a726-ac093eff059f" config-ref="HTTP_Request_configuration1" path="api"/>
 	</flow>
-	<flow name="contacts-apiFlow1" doc:id="e2e0c4fe-58d7-436a-b8e6-8af5e85035bc" >
-		<http:listener doc:name="Listener" doc:id="8b87d354-502a-40a6-aa0d-c68409843423" config-ref="HTTP_Listener_config" allowedMethods="GET" path="/contacts/{id}"/>
-		<set-variable value="#[attributes.uriParams.id]" doc:name="Set Variable" doc:id="b09f6f6a-c344-41c5-a156-61f8cf14758b" variableName="contactId"/>
-		<http:request method="GET" doc:name="Request" doc:id="531ad570-4817-4b62-a279-33c21bd48693" config-ref="HTTP_Request_configuration1" path="/users/{userId}" correlationId="#[correlationId]">
-			<http:headers ><![CDATA[#[output application/java
----
-{
-	Accept : application/json
+	<flow name="get-contact-flow" doc:id="e2e0c4fe-58d7-436a-b8e6-8af5e85035bc" >
+		<http:listener doc:name="GET /contacts/{id}" doc:id="8b87d354-502a-40a6-aa0d-c68409843423" config-ref="HTTP_Listener_config" allowedMethods="GET" path="/contacts/{id}">
+			<http:response statusCode="#[vars.httpStatus default 200]" />
+			<http:error-response statusCode="#[vars.httpStatus default 500]" >
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<set-variable value="#[attributes.uriParams.id]" doc:name="Save contact ID" doc:id="b09f6f6a-c344-41c5-a156-61f8cf14758b" variableName="contactId"/>
+		<http:request method="GET" doc:name="Get user" doc:id="531ad570-4817-4b62-a279-33c21bd48693" config-ref="HTTP_Request_configuration1" path="/users/{userId}" correlationId="#[correlationId]" responseTimeout="10000">
+			<http:headers ><![CDATA[#[{
+	"Accept": application/json,
+	"x-correlation-id": correlationId
 }]]]></http:headers>
-			<http:uri-params ><![CDATA[#[userId = #[vars.contactId]]]]></http:uri-params>
+			<http:uri-params ><![CDATA[#[{userId: vars.contactId}]]]></http:uri-params>
 		</http:request>
-		<ee:transform doc:name="Transform Message" doc:id="71ca26e8-7850-4049-b571-48a09a41fb87" >
+		<ee:transform doc:name="User to contact" doc:id="71ca26e8-7850-4049-b571-48a09a41fb87" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -35,18 +39,26 @@ output application/json
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+		<error-handler ref="contacts-error-handler" />
 	</flow>
-	<flow name="contacts-apiFlow2" doc:id="15d6df24-afc7-4ac2-ad61-b8fbaada54b7" >
-		<http:listener doc:name="Listener" doc:id="0f66a425-61a5-4299-b077-f8b05e79ceef" config-ref="HTTP_Listener_config" path="/contacts/{id}/notes" allowedMethods="GET"/>
-		<set-variable value="" doc:name="Set Variable" doc:id="3bc17a52-cafb-47b1-bdd7-102e8a93f165" variableName="contactId"/>
-		<http:request method="GET" doc:name="Request" doc:id="e1fa86ff-d658-4e28-9872-8e55fefc8502" config-ref="HTTP_Request_configuration1" path="/posts">
-			<http:query-params ><![CDATA[#[output application/java
----
-{
-	userId : #[vars.
+	<flow name="get-contact-notes-flow" doc:id="15d6df24-afc7-4ac2-ad61-b8fbaada54b7" >
+		<http:listener doc:name="Listener" doc:id="0f66a425-61a5-4299-b077-f8b05e79ceef" config-ref="HTTP_Listener_config" path="/contacts/{id}/notes" allowedMethods="GET">
+			<http:response statusCode="#[vars.httpStatus default 200]" />
+			<http:error-response statusCode="#[vars.httpStatus default 500]" >
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<set-variable value="#[attributes.uriParams.id]" doc:name="Save Contact ID" doc:id="3bc17a52-cafb-47b1-bdd7-102e8a93f165" variableName="contactId"/>
+		<http:request method="GET" doc:name="List Posts" doc:id="e1fa86ff-d658-4e28-9872-8e55fefc8502" config-ref="HTTP_Request_configuration1" path="/posts" responseTimeout="10000">
+			<http:headers ><![CDATA[#[{
+	"Accept": application/json,
+	"x-correlation-id": correlationdId
+}]]]></http:headers>
+			<http:query-params ><![CDATA[#[{
+	userId : vars.contactId
 }]]]></http:query-params>
 		</http:request>
-		<ee:transform doc:name="Transform Message" doc:id="12bb7a0e-530e-4960-affa-f016b1260bd0" >
+		<ee:transform doc:name="Post to Notes" doc:id="12bb7a0e-530e-4960-affa-f016b1260bd0" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -61,11 +73,17 @@ output application/json
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+		<error-handler ref="contacts-error-handler" />
 	</flow>
-	<flow name="contacts-apiFlow3" doc:id="e1373173-7440-4439-865e-05a2c96123a4" >
-		<http:listener doc:name="Listener" doc:id="e9e96c80-764c-45f1-9937-0f5903b0e28b" config-ref="HTTP_Listener_config" path="/contacts/{id}/notes" allowedMethods="POST"/>
-		<set-variable value="" doc:name="Set Variable" doc:id="04c3e125-5cee-4b8a-9abe-fe7e1d646902" variableName="contactId"/>
-		<ee:transform doc:name="Transform Message" doc:id="7d07a4d3-f32d-4b18-8a7b-6711023a80e5" >
+	<flow doc:id="e1373173-7440-4439-865e-05a2c96123a4" name="create-contact-note-flow">
+		<http:listener doc:name="Listener" doc:id="e9e96c80-764c-45f1-9937-0f5903b0e28b" config-ref="HTTP_Listener_config" path="/contacts/{id}/notes" allowedMethods="POST">
+			<http:response statusCode="#[vars.httpStatus default 200]" />
+			<http:error-response statusCode="#[vars.httpStatus default 500]" >
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<set-variable value="#[attributes.uriParams.id]" doc:name="Save Contact ID" doc:id="04c3e125-5cee-4b8a-9abe-fe7e1d646902" variableName="contactId"/>
+		<ee:transform doc:name="Build Post Body" doc:id="7d07a4d3-f32d-4b18-8a7b-6711023a80e5" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -77,9 +95,14 @@ output application/json
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<http:request method="GET" doc:name="Request" doc:id="c2ff153e-ff71-46de-9287-6b94fa9bfdc4" path="/posts"/>
-		<set-variable value="#[201]" doc:name="Set Variable" doc:id="5f05df66-aa61-4abd-8319-912b7fd856ba" variableName="httpStatus"/>
-		<ee:transform doc:name="Transform Message" doc:id="3312ca1d-9de3-4770-a0dc-e59d9acb9d45" >
+		<http:request method="GET" doc:name="Create post" doc:id="c2ff153e-ff71-46de-9287-6b94fa9bfdc4" path="/posts" responseTimeout="10000" config-ref="HTTP_Request_configuration1">
+			<http:headers ><![CDATA[#[{
+	"Accept": application/json,
+	"x-correlation-id": correlationId
+}]]]></http:headers>
+		</http:request>
+		<set-variable value="#[201]" doc:name="Status 201" doc:id="5f05df66-aa61-4abd-8319-912b7fd856ba" variableName="httpStatus"/>
+		<ee:transform doc:name="Build Response" doc:id="3312ca1d-9de3-4770-a0dc-e59d9acb9d45" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -91,5 +114,72 @@ output application/json
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+		<error-handler ref="contacts-error-handler" />
 	</flow>
+	<error-handler name="contacts-error-handler" doc:id="c3cc0923-9145-4b14-b1ef-fce4e675f824" >
+		<on-error-propagate enableNotifications="true" logException="false" doc:name="On Error Propagate" doc:id="88be2a4f-dda6-4800-8d9e-81b54867a010" type="HTTP:NOT_FOUND">
+			<set-variable value="#[404]" doc:name="404" doc:id="064783f6-7b3b-4a4f-954f-ebaf11010cd2" variableName="httpStatus"/>
+			<ee:transform doc:name="404 Response" doc:id="3428c051-9d75-435c-b7b1-c07039e19eb8" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "ERROR",
+	errorCode: "CONTACT_NOT_FOUND",
+	message: "Contact " ++ (vars.contactId default "") ++ " not found",
+	correlationId: correlationId
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="8e90ca9a-cd75-4a5b-a7cb-65e63f3fcaf1" type="HTTP:CONNECTIVITY, HTTP:TIMEOUT">
+			<set-variable value="#[503]" doc:name="503" doc:id="ab68aeac-ec73-4bfe-9e22-b8b957dfa29f" variableName="httpStatus" />
+			<ee:transform doc:name="503 Response" doc:id="7be022b7-9bc3-4ea7-b11c-90afcdeef4b1" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "ERROR",
+	errorCode: "UPSTREAM_UNAVAILABLE",
+	message: "The contacts service is temporarily unavailable. Please try again later.",
+	correlationId: correlationId
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="a50bc92e-16d5-4e6e-a617-eb6af99d8a79" when="#[error.errorType.namespace == 'HTTP']">
+			<set-variable value="#[502]" doc:name="502" doc:id="2bae55f4-f4b5-4f65-ac47-a54d13efac3c" variableName="httpStatus" />
+			<ee:transform doc:name="502 Response" doc:id="c7a9a24c-aa8c-4bf0-8f91-7b9f95268b9b" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "ERROR",
+	errorCode: "UPSTREAM_UNAVAILABLE",
+	message: "The contacts returned an unexpected error",
+	correlationId: correlationId
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="aec5ef84-9813-4a95-ad10-1afbba44a8ae" type="ANY">
+			<set-variable value="#[500]" doc:name="500" doc:id="738856da-72b6-40b5-bb32-b5f3a72da05a" variableName="httpStatus" />
+			<ee:transform doc:name="500 Response" doc:id="ce0b5123-01bf-4db3-90c5-4863cac119d3" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "ERROR",
+	errorCode: "INTERNAL_ERROR",
+	message: "An unexpected error occurred",
+	correlationId: correlationId
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+	</error-handler>
 </mule>
