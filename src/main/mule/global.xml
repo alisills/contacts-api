@@ -7,7 +7,7 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="345f8cb9-f40d-45a0-9496-21a7fb308772" basePath="api">
 		<http:listener-connection host="0.0.0.0" port="8083" />
 	</http:listener-config>
-	<http:request-config name="HTTP_Request_configuration1" doc:name="HTTP Request configuration" doc:id="d464ad7e-7dc8-470e-855c-d9fdd578ce6c">
+	<http:request-config name="JSONPlaceholder_Config" doc:name="HTTP Request configuration" doc:id="d464ad7e-7dc8-470e-855c-d9fdd578ce6c">
 		<http:request-connection protocol="HTTPS" host="jsonplaceholder.typicode.com" port="443" />
 	</http:request-config>
 </mule>
