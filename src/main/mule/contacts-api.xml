@@ -91,7 +91,7 @@ output application/json
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<http:request method="GET" doc:name="Create post" doc:id="c2ff153e-ff71-46de-9287-6b94fa9bfdc4" path="/posts" responseTimeout="10000" config-ref="JSONPlaceholder_Config">
+		<http:request method="POST" doc:name="Create post" doc:id="c2ff153e-ff71-46de-9287-6b94fa9bfdc4" path="/posts" responseTimeout="10000" config-ref="JSONPlaceholder_Config">
 			<http:headers ><![CDATA[#[{
 	"Accept": "application/json",
 	"x-correlation-id": "correlationId"
